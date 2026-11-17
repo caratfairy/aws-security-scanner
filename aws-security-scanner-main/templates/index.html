@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS 보안 진단 대시보드</title>
+
+    <style>
+        :root {
+            --bg: #f5f7fb;
+            --white: #ffffff;
+            --text: #172033;
+            --sub: #64748b;
+            --border: #e5eaf2;
+            --blue: #3767e8;
+            --blue-light: #edf3ff;
+            --green: #059669;
+            --green-bg: #ecfdf5;
+            --red: #dc2626;
+            --red-bg: #fef2f2;
+            --orange: #d97706;
+            --orange-bg: #fffbeb;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 32px 20px;
+            background: var(--bg);
+            color: var(--text);
+            font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        /* 상단 헤더 */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .header-title h1 {
+            margin: 0;
+            font-size: 27px;
+            font-weight: 800;
+        }
+
+        .header-title p {
+            margin: 6px 0 0;
+            color: var(--sub);
+            font-size: 14px;
+        }
+
+        .logout-btn {
+            text-decoration: none;
+            color: #475569;
+            background: white;
+            border: 1px solid var(--border);
+            padding: 9px 17px;
+            border-radius: 9px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .logout-btn:hover {
+            background: #f1f5f9;
+        }
+
+        /* 공통 섹션 */
+        .section {
+            margin-bottom: 27px;
+        }
+
+        .section-heading {
+            margin-bottom: 15px;
+        }
+
+        .section-heading h2 {
+            font-size: 19px;
+            margin: 0;
+        }
+
+        .section-heading p {
+            margin: 5px 0 0;
+            font-size: 13px;
+            color: var(--sub);
+        }
+
+        /* 요약 카드 */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+        }
+
+        .summary-card {
+            background: var(--white);
+            padding: 21px;
+            border: 1px solid var(--border);
+            border-radius: 13px;
+            box-shadow: 0 2px 7px rgba(15, 23, 42, 0.03);
+        }
+
+        .summary-label {
+            color: var(--sub);
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .summary-value {
+            margin-top: 9px;
+            font-size: 29px;
+            font-weight: 800;
+        }
+
+        .summary-description {
+            margin-top: 5px;
+            font-size: 12px;
+            color: var(--sub);
+        }
+
+        .blue-text { color: var(--blue); }
+        .green-text { color: var(--green); }
+        .red-text { color: var(--red); }
+        .orange-text { color: var(--orange); }
+
+        /* 보안 점수 */
+        .score-panel {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 23px;
+        }
+
+        .score-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 13px;
+        }
+
+        .score-top h3 {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        .score-number {
+            font-size: 25px;
+            font-weight: 800;
+            color: var(--blue);
+        }
+
+        .progress-bg {
+            height: 11px;
+            background: #e9eef7;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--blue);
+            border-radius: 20px;
+        }
+
+        .score-description {
+            margin-top: 11px;
+            font-size: 13px;
+            color: var(--sub);
+        }
+
+        /* AI 리포트 */
+        .report-panel {
+            background: white;
+            border: 1px solid #dce6fa;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .report-header {
+            padding: 20px 23px;
+            background: #f0f5ff;
+            border-bottom: 1px solid #dce6fa;
+        }
+
+        .report-header h2 {
+            margin: 0;
+            font-size: 19px;
+            color: #244ca8;
+        }
+
+        .report-header p {
+            margin: 5px 0 0;
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .report-content {
+            padding: 25px;
+            color: #334155;
+            font-size: 14px;
+            line-height: 1.85;
+            overflow-wrap: anywhere;
+        }
+
+        /* Markdown으로 변환된 AI 리포트 */
+        .report-content h1 {
+            font-size: 21px;
+            margin: 10px 0 18px;
+            color: #172033;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 12px;
+        }
+
+        .report-content h2 {
+            font-size: 18px;
+            margin: 27px 0 12px;
+            color: #244ca8;
+        }
+
+        .report-content h3 {
+            font-size: 15px;
+            margin: 20px 0 8px;
+            color: #334155;
+        }
+
+        .report-content p {
+            margin: 9px 0;
+        }
+
+        .report-content ul,
+        .report-content ol {
+            padding-left: 23px;
+            margin: 10px 0;
+        }
+
+        .report-content li {
+            margin-bottom: 7px;
+        }
+
+        .report-content strong {
+            color: #172033;
+        }
+
+        .report-content blockquote {
+            margin: 15px 0;
+            padding: 12px 17px;
+            background: #f8fafc;
+            border-left: 4px solid var(--blue);
+            color: #475569;
+        }
+
+        .report-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 13px;
+        }
+
+        .report-content th,
+        .report-content td {
+            border: 1px solid var(--border);
+            padding: 10px;
+            text-align: left;
+        }
+
+        .report-content th {
+            background: #f1f5f9;
+        }
+
+        .empty-report {
+            color: var(--sub);
+            text-align: center;
+            padding: 25px 10px;
+        }
+
+        /* 진단 결과 목록 */
+        .result-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .result-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 19px 21px;
+            transition: box-shadow 0.2s, transform 0.2s;
+        }
+
+        .result-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(15, 23, 42, 0.06);
+        }
+
+        .result-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 15px;
+        }
+
+        .result-name {
+            font-size: 16px;
+            font-weight: 750;
+            margin: 0;
+        }
+
+        .result-target {
+            font-size: 13px;
+            color: var(--sub);
+            margin-top: 5px;
+            overflow-wrap: anywhere;
+        }
+
+        .status {
+            display: inline-block;
+            min-width: 65px;
+            text-align: center;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .status-pass {
+            color: var(--green);
+            background: var(--green-bg);
+        }
+
+        .status-fail {
+            color: var(--red);
+            background: var(--red-bg);
+        }
+
+        .status-info {
+            color: var(--orange);
+            background: var(--orange-bg);
+        }
+
+        .result-detail {
+            margin-top: 15px;
+            padding: 12px 14px;
+            background: #f8fafc;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #475569;
+            overflow-wrap: anywhere;
+        }
+
+        .result-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .meta-tag {
+            background: #f1f5f9;
+            color: #64748b;
+            padding: 4px 9px;
+            border-radius: 5px;
+            font-size: 11px;
+        }
+
+        .risk-high { color: var(--red); }
+        .risk-medium { color: var(--orange); }
+        .risk-low { color: var(--green); }
+
+        .empty-results {
+            padding: 35px;
+            text-align: center;
+            color: var(--sub);
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+
+        footer {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 12px;
+            padding: 20px 0 5px;
+        }
+
+        /* 모바일 대응 */
+        @media (max-width: 750px) {
+            body {
+                padding: 22px 13px;
+            }
+
+            .summary-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .header-title h1 {
+                font-size: 20px;
+            }
+
+            .summary-card {
+                padding: 16px;
+            }
+
+            .summary-value {
+                font-size: 24px;
+            }
+
+            .result-top {
+                align-items: flex-start;
+            }
+
+            .report-content {
+                padding: 18px;
+            }
+        }
+
+        @media (max-width: 420px) {
+            header {
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .logout-btn {
+                padding: 7px 10px;
+            }
+
+            .result-card {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- 상단 헤더 -->
+    <header>
+        <div class="header-title">
+            <h1>🛡️ AWS 보안 진단 대시보드</h1>
+            <p>클라우드 인프라 보안 상태 및 취약점 분석 결과</p>
+        </div>
+
+        <a href="/logout" class="logout-btn">로그아웃</a>
+    </header>
+
+
+    <!-- 1. 전체 진단 요약 -->
+    <section class="section">
+
+        <div class="section-heading">
+            <h2>진단 현황</h2>
+            <p>AWS 인프라의 전체 보안 점검 결과입니다.</p>
+        </div>
+
+        <div class="summary-grid">
+
+            <div class="summary-card">
+                <div class="summary-label">전체 검사 항목</div>
+                <div class="summary-value blue-text">
+                    {{ summary.total_checks }}
+                </div>
+                <div class="summary-description">Total Checks</div>
+            </div>
+
+            <div class="summary-card">
+                <div class="summary-label">정상 항목</div>
+                <div class="summary-value green-text">
+                    {{ summary.pass_count }}
+                </div>
+                <div class="summary-description">PASS</div>
+            </div>
+
+            <div class="summary-card">
+                <div class="summary-label">취약 항목</div>
+                <div class="summary-value red-text">
+                    {{ summary.fail_count }}
+                </div>
+                <div class="summary-description">FAIL</div>
+            </div>
+
+            <div class="summary-card">
+                <div class="summary-label">확인 필요</div>
+                <div class="summary-value orange-text">
+                    {{ summary.info_count }}
+                </div>
+                <div class="summary-description">INFO</div>
+            </div>
+
+        </div>
+    </section>
+
+
+    <!-- 2. 보안 점수 -->
+    <section class="section">
+
+        <div class="section-heading">
+            <h2>보안 점수</h2>
+            <p>취약점의 위험도에 따라 계산된 현재 보안 점수입니다.</p>
+        </div>
+
+        <div class="score-panel">
+
+            <div class="score-top">
+                <h3>Security Score</h3>
+                <div class="score-number">
+                    {{ summary.security_score }} / 100
+                </div>
+            </div>
+
+            <div class="progress-bg">
+                <!-- 💡 수정된 부분: CSS 파일 대신 HTML 태그 내부에 style로 직접 입력 -->
+                <div class="progress-bar" style="width: {{ summary.security_score }}%;"></div>
+            </div>
+
+            <div class="score-description">
+                전체 점검 결과를 바탕으로 계산한 보안 점수입니다.
+            </div>
+
+        </div>
+    </section>
+
+
+    <!-- 3. AI 자연어 기반 분석 리포트 -->
+    <section class="section">
+
+        <div class="section-heading">
+            <h2>AI 보안 분석 리포트</h2>
+            <p>
+                AWS 진단 결과와 보안 가이드를 바탕으로 생성된
+                자연어 분석 및 개선 권고 사항입니다.
+            </p>
+        </div>
+
+        <div class="report-panel">
+
+            <div class="report-header">
+                <h2>✨ AI Security Insight</h2>
+                <p>주요 취약점과 보안 개선 방향을 확인하세요.</p>
+            </div>
+
+            <div class="report-content">
+
+                {% if ai_report_html %}
+                    {{ ai_report_html | safe }}
+
+                {% elif summary.ai_report %}
+                    {{ summary.ai_report }}
+
+                {% else %}
+                    <div class="empty-report">
+                        AI 분석 리포트가 아직 생성되지 않았습니다.
+                    </div>
+                {% endif %}
+
+            </div>
+        </div>
+    </section>
+
+
+    <!-- 4. 세부 진단 결과 -->
+    <section class="section">
+
+        <div class="section-heading">
+            <h2>세부 보안 진단 결과</h2>
+            <p>
+                각 AWS 리소스의 점검 상태, 위험도 및 상세 내용을 확인할 수 있습니다.
+            </p>
+        </div>
+
+        <div class="result-list">
+
+            {% for r in results %}
+
+            <div class="result-card">
+
+                <div class="result-top">
+
+                    <div>
+                        <h3 class="result-name">
+                            {{ r.item }}
+                        </h3>
+
+                        <div class="result-target">
+                            점검 대상: {{ r.target }}
+                        </div>
+                    </div>
+
+                    {% if r.status | upper == 'PASS' %}
+                        <span class="status status-pass">PASS</span>
+
+                    {% elif r.status | upper == 'FAIL' %}
+                        <span class="status status-fail">FAIL</span>
+
+                    {% else %}
+                        <span class="status status-info">INFO</span>
+                    {% endif %}
+
+                </div>
+
+
+                <!-- 상세 설명 -->
+                <div class="result-detail">
+                    {{ r.detail }}
+                </div>
+
+
+                <!-- 위험도 및 가이드 코드 -->
+                <div class="result-meta">
+
+                    {% if r.risk == 'High' %}
+                        <span class="meta-tag risk-high">
+                            위험도: 높음
+                        </span>
+
+                    {% elif r.risk == 'Medium' %}
+                        <span class="meta-tag risk-medium">
+                            위험도: 중간
+                        </span>
+
+                    {% elif r.risk == 'Low' %}
+                        <span class="meta-tag risk-low">
+                            위험도: 낮음
+                        </span>
+
+                    {% else %}
+                        <span class="meta-tag">
+                            위험도: 정보
+                        </span>
+                    {% endif %}
+
+                    <span class="meta-tag">
+                        {{ r.kisa_code }}
+                    </span>
+
+                </div>
+
+            </div>
+
+            {% else %}
+
+                <div class="empty-results">
+                    표시할 진단 결과가 없습니다.
+                </div>
+
+            {% endfor %}
+
+        </div>
+    </section>
+
+
+    <footer>
+        AWS Cloud Security Diagnosis System
+    </footer>
+
+</div>
+
+</body>
+</html>
